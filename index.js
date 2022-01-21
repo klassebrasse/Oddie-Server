@@ -8,11 +8,15 @@ const io = new Server(server);
 let users = [];
 let odds = [];
 
-const addUser = async (id, lobby, username, deviceToken) => {
-    let newUser = {id, username, lobby, active: true, deviceToken}
-    await users.push(newUser)
-
+const addUser = async (id, roomId, username, deviceToken, color) => {
+    let newUser = {id: id, username: username, roomId: roomId, active: true, deviceToken: deviceToken, color: color, status: null, zips: 0}
+    //await users.push(newUser)
+    users.push(newUser)
     //return getUsersInRoom(lobby)
+}
+
+const getUsersInRoom = (lobby) => {
+    return users.filter((user) => user.roomId === lobby)
 }
 
 io.on('connection', (socket) => {
@@ -22,7 +26,16 @@ io.on('connection', (socket) => {
         console.log("user disconnected")
     })
 
+    socket.on('join room', async (roomId, username, color, deviceToken) => {
+        await socket.join(roomId);
 
+        await addUser(socket.id, roomId, username)
+
+        const listToEmit = getUsersInRoom(roomId)
+        console.log(users)
+
+        io.to(roomId).emit("users", listToEmit);
+    })
 
 });
 
