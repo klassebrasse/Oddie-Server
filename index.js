@@ -30,6 +30,19 @@ const getUsersInRoom = (lobby) => {
     return users.filter((user) => user.roomId === lobby)
 }
 
+const getPushTokensInRoomExceptCurrentUser = async (roomId, id) => {
+    const listOfTokens = []
+
+    const allUsersExceptCurrentUSer = getUsersInRoom(roomId).filter(u => u.id !== id)
+
+    allUsersExceptCurrentUSer.forEach(u => listOfTokens.push(u.deviceToken))
+
+    console.log("LISTA AV TÖKKENS" + listOfTokens + " SLUT")
+    return listOfTokens
+}
+
+//ExponentPushToken[b_QoKmLyYb6oZnert13ZLo]
+// ExponentPushToken[OGp7QDBzM9i0LTvO38gzrP]
 async function sendPushNotification(expoPushToken) {
     const message = {
         to: expoPushToken,
@@ -66,9 +79,11 @@ io.on('connection', (socket) => {
         const listToEmit = getUsersInRoom(roomId)
         console.log(users)
 
+        const listOfTokens = await getPushTokensInRoomExceptCurrentUser(roomId, socket.id)
+
         io.to(roomId).emit("users", listToEmit);
         console.log(expoPushToken)
-        await sendPushNotification(expoPushToken)
+        await sendPushNotification(listOfTokens)
 
 
     })
