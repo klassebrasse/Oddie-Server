@@ -26,14 +26,18 @@ const addUser = async (id, roomId, username, deviceToken, color) => {
     //return getUsersInRoom(lobby)
 }
 
-const getUsersInRoom = (lobby) => {
-    return users.filter((user) => user.roomId === lobby)
+const getUsersInRoom = async (lobby) => {
+    return users.filter((user) => user.roomId === lobby);
+}
+
+const removeUser = (id) => {
+    users = users.filter((user) => user.id !== id)
 }
 
 const getPushTokensInRoomExceptCurrentUser = async (roomId, id) => {
     const listOfTokens = []
-
-    const allUsersExceptCurrentUSer = getUsersInRoom(roomId).filter(u => u.id !== id)
+    const usersInRoom = await getUsersInRoom(roomId)
+    const allUsersExceptCurrentUSer = usersInRoom.filter(u => u.id !== id)
 
     allUsersExceptCurrentUSer.forEach(u => listOfTokens.push(u.deviceToken))
 
@@ -76,16 +80,21 @@ io.on('connection', (socket) => {
 
         await addUser(socket.id, roomId, username, expoPushToken)
 
-        const listToEmit = getUsersInRoom(roomId)
+        const listToEmit = await getUsersInRoom(roomId)
         console.log(users)
 
         const listOfTokens = await getPushTokensInRoomExceptCurrentUser(roomId, socket.id)
 
-        io.to(roomId).emit("users", listToEmit);
+        io.to(roomId).emit('users', listToEmit);
         console.log(expoPushToken)
         await sendPushNotification(listOfTokens)
+    })
 
+    socket.on('leave room', async (roomId) => {
+        await removeUser(socket.id)
 
+        const listToEmit = await getUsersInRoom(roomId)
+        io.to(roomId).emit('users', listToEmit);
     })
 
 });
