@@ -47,12 +47,12 @@ const getPushTokensInRoomExceptCurrentUser = async (roomId, id) => {
 
 //ExponentPushToken[b_QoKmLyYb6oZnert13ZLo]
 // ExponentPushToken[OGp7QDBzM9i0LTvO38gzrP]
-async function sendPushNotification(expoPushToken) {
+async function sendPushNotification(expoPushToken, username) {
     const message = {
         to: expoPushToken,
         sound: 'default',
-        title: 'Ny användare kom in i rummet',
-        body: 'Klicka för att se användaren',
+        title: `${username} gick med i rummet`,
+        //body: 'Klicka för att se användaren',
         data: {someData: 'goes here'},
     };
 
@@ -75,10 +75,11 @@ io.on('connection', (socket) => {
         console.log("user disconnected")
     })
 
-    socket.on('join room', async (roomId, username, expoPushToken) => {
+    socket.on('join room', async (roomId, username, expoPushToken, customColor) => {
         await socket.join(roomId);
 
-        await addUser(socket.id, roomId, username, expoPushToken)
+        const randomColor = '#'+Math.floor(Math.random()*16777215).toString(16);
+        await addUser(socket.id, roomId, username, expoPushToken, customColor)
 
         const listToEmit = await getUsersInRoom(roomId)
         console.log(users)
@@ -86,8 +87,7 @@ io.on('connection', (socket) => {
         const listOfTokens = await getPushTokensInRoomExceptCurrentUser(roomId, socket.id)
 
         io.to(roomId).emit('users', listToEmit);
-        console.log(expoPushToken)
-        await sendPushNotification(listOfTokens)
+        //await sendPushNotification(listOfTokens, username)
     })
 
     socket.on('leave room', async (roomId) => {
