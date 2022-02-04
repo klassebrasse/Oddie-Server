@@ -30,12 +30,13 @@ const uid = () => {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-const addOdd = async (roomId, sender, receiver, zips, id) => {
+const addOdd = async (roomId, sender, receiver, zips, id, receiverSocketId) => {
     let newOdd = {
         id: id,
         roomId: roomId,
         sender: sender,
         receiver: receiver,
+        receiverSocketId: receiverSocketId,
         status: 0,
         zips: zips,
     }
@@ -63,6 +64,11 @@ const getPushTokensInRoomExceptCurrentUser = async (roomId, id) => {
 
     console.log("LISTA AV TÖKKENS" + listOfTokens + " SLUT")
     return listOfTokens
+}
+
+const getUserById = async (id) => {
+    const userId = id;
+    return await users.find(({id}) => id === userId)
 }
 
 const getUserByRoomIdAndUsername = async (roomId, username) => {
@@ -123,20 +129,18 @@ io.on('connection', (socket) => {
         await sendPushNotification(listOfTokens, `${username} gick med i rummet`)
     })
 
-    socket.on('sending odds', async (username, zips, roomId, callback) => {
-        const userToNotice = await getUserByRoomIdAndUsername(roomId,username)
+    socket.on('sending odds', async (username, zips, roomId, receiverSocketId, callback) => {
+        const userToNotice = await getUserById(receiverSocketId)
         console.log("tok " + userToNotice.deviceToken)
         const sender = await users.find(u => u.id === socket.id)
         const id = await uid();
-        await addOdd(roomId, socket.id, username, zips, id);
+        await addOdd(roomId, socket.id, username, zips, id, receiverSocketId);
 
         const newOdd = await getOdd(id)
         callback({
             oddsSent: newOdd.length
         })
-
         await sendPushNotification(userToNotice.deviceToken, `${sender.username} oddsade dig`)
-
     })
 
     socket.on('leave room', async (roomId) => {
