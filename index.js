@@ -45,6 +45,13 @@ const getPushTokensInRoomExceptCurrentUser = async (roomId, id) => {
     return listOfTokens
 }
 
+const findUsernameInRoom = async (roomId, username) => {
+    const usersInRoom = await getUsersInRoom(roomId);
+    return await usersInRoom.find(user => {
+        return user.username === username
+    })
+}
+
 //ExponentPushToken[b_QoKmLyYb6oZnert13ZLo]
 // ExponentPushToken[OGp7QDBzM9i0LTvO38gzrP]
 async function sendPushNotification(expoPushToken, username) {
@@ -82,7 +89,7 @@ io.on('connection', (socket) => {
         await addUser(socket.id, roomId, username, expoPushToken, customColor)
 
         const listToEmit = await getUsersInRoom(roomId)
-        console.log(users)
+        //console.log(users)
 
         const listOfTokens = await getPushTokensInRoomExceptCurrentUser(roomId, socket.id)
 
@@ -95,6 +102,15 @@ io.on('connection', (socket) => {
 
         const listToEmit = await getUsersInRoom(roomId)
         io.to(roomId).emit('users', listToEmit);
+    })
+
+    socket.on('check username', async (roomId, username, callback) => {
+        const userObject = await findUsernameInRoom(roomId, username);
+
+        callback({
+            usernameIsOk: !userObject
+        })
+
     })
 
 });
