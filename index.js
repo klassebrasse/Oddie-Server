@@ -26,6 +26,26 @@ const addUser = async (id, roomId, username, deviceToken, color) => {
     //return getUsersInRoom(lobby)
 }
 
+const uid = () => {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+const addOdd = async (roomId, sender, receiver, zips, id) => {
+    let newOdd = {
+        id: id,
+        roomId: roomId,
+        sender: sender,
+        receiver: receiver,
+        status: 0,
+        zips: zips,
+    }
+    odds.push(newOdd)
+}
+
+const getOdd = async (id) => {
+    return odds.filter((odd) => odd.id === id);
+}
+
 const getUsersInRoom = async (lobby) => {
     return users.filter((user) => user.roomId === lobby);
 }
@@ -45,6 +65,12 @@ const getPushTokensInRoomExceptCurrentUser = async (roomId, id) => {
     return listOfTokens
 }
 
+const getUserByRoomIdAndUsername = async (roomId, username) => {
+    const usersInRoom = await getUsersInRoom(roomId);
+    const un = username
+    return await usersInRoom.find(({username}) => username === un)
+}
+
 const findUsernameInRoom = async (roomId, username) => {
     const usersInRoom = await getUsersInRoom(roomId);
     return await usersInRoom.find(user => {
@@ -54,11 +80,11 @@ const findUsernameInRoom = async (roomId, username) => {
 
 //ExponentPushToken[b_QoKmLyYb6oZnert13ZLo]
 // ExponentPushToken[OGp7QDBzM9i0LTvO38gzrP]
-async function sendPushNotification(expoPushToken, username) {
+async function sendPushNotification(expoPushToken, text) {
     const message = {
         to: expoPushToken,
         sound: 'default',
-        title: `${username} gick med i rummet`,
+        title: text,
         //body: 'Klicka för att se användaren',
         data: {someData: 'goes here'},
     };
@@ -94,7 +120,23 @@ io.on('connection', (socket) => {
         const listOfTokens = await getPushTokensInRoomExceptCurrentUser(roomId, socket.id)
 
         io.to(roomId).emit('users', listToEmit);
-        //await sendPushNotification(listOfTokens, username)
+        await sendPushNotification(listOfTokens, `${username} gick med i rummet`)
+    })
+
+    socket.on('sending odds', async (username, zips, roomId, callback) => {
+        const userToNotice = await getUserByRoomIdAndUsername(roomId,username)
+        console.log("tok " + userToNotice.deviceToken)
+        const sender = await users.find(u => u.id === socket.id)
+        const id = await uid();
+        await addOdd(roomId, socket.id, username, zips, id);
+
+        const newOdd = await getOdd(id)
+        callback({
+            oddsSent: newOdd.length
+        })
+
+        await sendPushNotification(userToNotice.deviceToken, `${sender.username} oddsade dig`)
+
     })
 
     socket.on('leave room', async (roomId) => {
