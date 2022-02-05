@@ -184,6 +184,14 @@ io.on('connection', (socket) => {
         })
     })
 
+    socket.on('get odds', async (roomId, callback) => {
+        const listToEmit = odds.filter((o) => o.receiverSocketId === socket.id)
+        console.log("get odds triggas")
+        callback({
+            oddsList: listToEmit
+        })
+    })
+
     socket.on('update user list', async (roomId, callback) => {
         const listToEmit = await getUsersInRoom(roomId)
 
