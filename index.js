@@ -2,6 +2,7 @@ import fetch from "node-fetch";
 import express from "express"
 import * as http from "http";
 import {Server} from "socket.io"
+import { Timer } from 'timer-node';
 
 const app = express();
 const server = http.createServer(app);
@@ -19,7 +20,13 @@ const addUser = async (id, roomId, username, deviceToken, color) => {
         deviceToken: deviceToken,
         color: color,
         status: null,
-        zips: 0
+        zips: 0,
+        timeOuts: [
+            {
+                socketId: null,
+                time: Timer,
+            },
+        ]
     }
     //await users.push(newUser)
     users.push(newUser)
@@ -83,6 +90,9 @@ const findUsernameInRoom = async (roomId, username) => {
         return user.username === username
     })
 }
+const findIndexOfUser = async (id) => {
+    return users.findIndex((obj => obj.id === id));
+}
 
 //ExponentPushToken[b_QoKmLyYb6oZnert13ZLo]
 // ExponentPushToken[OGp7QDBzM9i0LTvO38gzrP]
@@ -129,12 +139,29 @@ io.on('connection', (socket) => {
         await sendPushNotification(listOfTokens, `${username} gick med i rummet`)
     })
 
+
     socket.on('sending odds', async (username, zips, roomId, receiverSocketId, callback) => {
         const userToNotice = await getUserById(receiverSocketId)
         console.log("tok " + userToNotice.deviceToken)
         const sender = await users.find(u => u.id === socket.id)
         const id = await uid();
         await addOdd(roomId, socket.id, username, zips, id, receiverSocketId);
+        const index = await findIndexOfUser(socket.id);
+
+        const timer = new Timer({label: 'test-timer'});
+        timer.start()
+        setTimeout(() => console.log(timer.time()), 4000)
+
+        const newTimeout = {
+            socketId: receiverSocketId,
+            time: timer,
+            test: "jajajajaj"
+        }
+
+        //console.log("INDEX: " + index)
+        console.log("Lista innan: " + JSON.stringify(users))
+        users[index].timeOuts.push(newTimeout)
+        console.log("Lista efter: " + JSON.stringify(users))
 
         const newOdd = await getOdd(id)
         callback({
@@ -152,11 +179,15 @@ io.on('connection', (socket) => {
 
     socket.on('check username', async (roomId, username, callback) => {
         const userObject = await findUsernameInRoom(roomId, username);
-
         callback({
             usernameIsOk: !userObject
         })
+    })
 
+    socket.on('update user list', async (roomId, callback) => {
+        const listToEmit = await getUsersInRoom(roomId)
+
+        io.to(roomId).emit('users', listToEmit);
     })
 
 });
