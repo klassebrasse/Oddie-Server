@@ -49,6 +49,8 @@ const addOdd = async (roomId, sender, receiver, zips, id, receiverSocketId, send
         zips: zips,
         receiverOdd: null,
         senderOdd: null,
+        receiverGuess: null,
+        senderGuess: null,
     }
     odds.push(newOdd)
 }
@@ -199,13 +201,13 @@ io.on('connection', (socket) => {
         })
     })
 
-    socket.on('accept odd', async (oddId, receiverOdds) => {
+    socket.on('accept odd', async (oddId, receiverOdds, receiverGuess) => {
         const index = odds.findIndex((obj => obj.id === oddId));
-        odds[index].receiverOdd = receiverOdds
+        odds[index].receiverOdd = receiverOdds;
         odds[index].status = 1;
+        odds[index].receiverGuess = receiverGuess;
 
         const listToEmit = odds.filter((o) => o.roomId === odds[index].roomId)
-
         io.to([socket.id, odds[index].sender]).emit('update list', listToEmit);
     })
 
@@ -213,6 +215,16 @@ io.on('connection', (socket) => {
         const listToEmit = await getUsersInRoom(roomId)
 
         io.to(roomId).emit('users', listToEmit);
+    })
+
+    socket.on('sender guess', async (oddId, myGuess) => {
+        const index = odds.findIndex((obj => obj.id === oddId));
+        odds[index].senderGuess = myGuess;
+        odds[index].status = 2;
+
+        const listToEmit = odds.filter((o) => o.roomId === odds[index].roomId);
+        io.to([socket.id, odds[index].receiverSocketId]).emit('update list', listToEmit);
+
     })
 
 });
