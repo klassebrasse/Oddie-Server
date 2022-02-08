@@ -37,15 +37,18 @@ const uid = () => {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-const addOdd = async (roomId, sender, receiver, zips, id, receiverSocketId) => {
+const addOdd = async (roomId, sender, receiver, zips, id, receiverSocketId, senderUsername) => {
     let newOdd = {
         id: id,
         roomId: roomId,
         sender: sender,
+        senderUsername : senderUsername,
         receiver: receiver,
         receiverSocketId: receiverSocketId,
         status: 0,
         zips: zips,
+        receiverOdd: null,
+        senderOdd: null,
     }
     odds.push(newOdd)
 }
@@ -145,7 +148,7 @@ io.on('connection', (socket) => {
         console.log("tok " + userToNotice.deviceToken)
         const sender = await users.find(u => u.id === socket.id)
         const id = await uid();
-        await addOdd(roomId, socket.id, username, zips, id, receiverSocketId);
+        await addOdd(roomId, socket.id, username, zips, id, receiverSocketId, sender.username);
         const index = await findIndexOfUser(socket.id);
 
         const timer = new Timer({label: 'test-timer'});
@@ -167,6 +170,10 @@ io.on('connection', (socket) => {
         callback({
             oddsSent: newOdd.length
         })
+
+        const listToEmit = odds.filter((o) => o.roomId === roomId)
+
+        io.to(receiverSocketId).emit('update list', listToEmit);
         await sendPushNotification(userToNotice.deviceToken, `${sender.username} oddsade dig`)
     })
 
@@ -185,11 +192,21 @@ io.on('connection', (socket) => {
     })
 
     socket.on('get odds', async (roomId, callback) => {
-        const listToEmit = odds.filter((o) => o.receiverSocketId === socket.id)
+        const listToEmit = odds.filter((o) => o.roomId === roomId)
         console.log("get odds triggas")
         callback({
             oddsList: listToEmit
         })
+    })
+
+    socket.on('accept odd', async (oddId, receiverOdds) => {
+        const index = odds.findIndex((obj => obj.id === oddId));
+        odds[index].receiverOdd = receiverOdds
+        odds[index].status = 1;
+
+        const listToEmit = odds.filter((o) => o.roomId === odds[index].roomId)
+
+        io.to([socket.id, odds[index].sender]).emit('update list', listToEmit);
     })
 
     socket.on('update user list', async (roomId, callback) => {
