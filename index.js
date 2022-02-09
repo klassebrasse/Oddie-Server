@@ -102,6 +102,7 @@ const findIndexOfUser = async (id) => {
 //ExponentPushToken[b_QoKmLyYb6oZnert13ZLo]
 // ExponentPushToken[OGp7QDBzM9i0LTvO38gzrP]
 async function sendPushNotification(expoPushToken, text) {
+    console.log("Push notification, token: " + expoPushToken + ", message: " + text)
     const message = {
         to: expoPushToken,
         sound: 'default',
@@ -162,11 +163,7 @@ io.on('connection', (socket) => {
             time: timer,
             test: "jajajajaj"
         }
-
-        //console.log("INDEX: " + index)
-        console.log("Lista innan: " + JSON.stringify(users))
         users[index].timeOuts.push(newTimeout)
-        console.log("Lista efter: " + JSON.stringify(users))
 
         const newOdd = await getOdd(id)
         callback({
@@ -203,12 +200,18 @@ io.on('connection', (socket) => {
 
     socket.on('accept odd', async (oddId, receiverOdds, receiverGuess) => {
         const index = odds.findIndex((obj => obj.id === oddId));
+
         odds[index].receiverOdd = receiverOdds;
         odds[index].status = 1;
         odds[index].receiverGuess = receiverGuess;
 
         const listToEmit = odds.filter((o) => o.roomId === odds[index].roomId)
         io.to([socket.id, odds[index].sender]).emit('update list', listToEmit);
+
+        const tempUser = await getUserById(odds[index].sender)
+        const token = tempUser.deviceToken
+
+        await sendPushNotification(token, `${odds[index].receiver} har gissat på din odds. Din tur att gissa`)
     })
 
     socket.on('update user list', async (roomId, callback) => {
@@ -225,6 +228,10 @@ io.on('connection', (socket) => {
         const listToEmit = odds.filter((o) => o.roomId === odds[index].roomId);
         io.to([socket.id, odds[index].receiverSocketId]).emit('update list', listToEmit);
 
+        const tempUser = await getUserById(odds[index].receiverSocketId)
+        const token = tempUser.deviceToken
+
+        await sendPushNotification(token, `${odds[index].senderUsername} har gissat. Kolla hur det gick`)
     })
 
 });
