@@ -4,6 +4,7 @@
 //import {Server} from "socket.io"
 //import { Timer } from 'timer-node';
 
+const Timer = require('timer-node')
 const fetch = require('node-fetch')
 const express = require('express')
 const app = express()
