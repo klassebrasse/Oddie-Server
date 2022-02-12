@@ -11,6 +11,11 @@ const io = new Server(server);
 let users = [];
 let odds = [];
 
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, ()=>{
+    console.log("Connected to portsssss:" + PORT);
+})
+
 const addUser = async (id, roomId, username, deviceToken, color) => {
     let newUser = {
         id: id,
@@ -234,8 +239,4 @@ io.on('connection', (socket) => {
         await sendPushNotification(token, `${odds[index].senderUsername} har gissat. Kolla hur det gick`)
     })
 
-});
-
-server.listen(3000, () => {
-    console.log('listening on *:3000');
 });
