@@ -1,20 +1,28 @@
-import fetch from "node-fetch";
-import express from "express"
-import * as http from "http";
-import {Server} from "socket.io"
-import { Timer } from 'timer-node';
+//import fetch from "node-fetch";
+//import express from "express"
+//import * as http from "http";
+//import {Server} from "socket.io"
+//import { Timer } from 'timer-node';
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+const fetch = require('node-fetch')
+const express = require('express')
+const app = express()
+
+//const server = http.createServer(app);
+
+const PORT = process.env.PORT || 5500;
+const http = require('http').Server(app)
+const io = require('socket.io')(http)
+
+app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'))
+
+http.listen(PORT, function (){
+    console.log('Lyssnar på PORT: ' + PORT)
+})
+
 
 let users = [];
 let odds = [];
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, ()=>{
-    console.log("Connected to portsssss:" + PORT);
-})
 
 const addUser = async (id, roomId, username, deviceToken, color) => {
     let newUser = {
