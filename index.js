@@ -38,7 +38,7 @@ const addUser = async (id, roomId, username, deviceToken, color) => {
         timeOuts: [
             {
                 socketId: null,
-                time: Timer,
+                time: null,
             },
         ]
     }
@@ -168,13 +168,9 @@ io.on('connection', (socket) => {
         await addOdd(roomId, socket.id, username, zips, id, receiverSocketId, sender.username);
         const index = await findIndexOfUser(socket.id);
 
-        const timer = new Timer({label: 'test-timer'});
-        timer.start()
-        setTimeout(() => console.log(timer.time()), 4000)
-
         const newTimeout = {
             socketId: receiverSocketId,
-            time: timer,
+            time: null,
             test: "jajajajaj"
         }
         users[index].timeOuts.push(newTimeout)
