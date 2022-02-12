@@ -5,10 +5,9 @@
   "dependencies": {
     "express": "^4.17.2",
     "firebase": "^9.6.4",
-    "node-fetch": "^3.2.0",
+    "node-fetch": "^2.6.7",
     "nodemon": "^2.0.15",
     "socket.io": "^4.4.1",
     "timer-node": "^5.0.5"
-  },
-  "type": "module"
+  }
 }
