@@ -113,6 +113,10 @@ const findIndexOfUser = async (id) => {
     return users.findIndex((obj => obj.id === id));
 }
 
+const findIndexOfTimeout = async (userIndex, timeoutId) => {
+    return users[userIndex].timeOuts.findIndex((obj => obj.timeoutId === timeoutId))
+}
+
 //ExponentPushToken[b_QoKmLyYb6oZnert13ZLo]
 // ExponentPushToken[OGp7QDBzM9i0LTvO38gzrP]
 async function sendPushNotification(expoPushToken, text) {
@@ -136,6 +140,12 @@ async function sendPushNotification(expoPushToken, text) {
     });
 }
 
+function addMinutes(minutes) {
+    const date = new Date()
+    return new Date(date.getTime() + 10000);
+    //return new Date(date.getTime() + minutes*60000);
+}
+
 
 io.on('connection', (socket) => {
     console.log('a user connected');
@@ -157,9 +167,33 @@ io.on('connection', (socket) => {
 
         io.to(roomId).emit('users', listToEmit);
         await sendPushNotification(listOfTokens, `${username} gick med i rummet`)
+
+        io.emit('show all connected', users)
     })
 
+    function startTimer(timeoutIndex, userIndex, receiverSocketId, roomId) {
+        let duration = 10;
 
+            let timer = setInterval(async function () {
+                if (users[userIndex] !== undefined && users[userIndex].timeOuts[timeoutIndex] !== undefined) {
+                    io.to(socket.id).emit('timer', receiverSocketId, duration)
+                    duration--;
+                    users[userIndex].timeOuts[timeoutIndex].time = duration
+                    console.log(users[userIndex].timeOuts[timeoutIndex].time + "   ssssssss")
+                }
+                if (duration === 0) {
+                    console.log("SLUT PÅ INTERVALET")
+                    io.to(socket.id).emit('timer', receiverSocketId, duration)
+                    users[userIndex].timeOuts[timeoutIndex].time = 0;
+                    users[userIndex].timeOuts.splice(timeoutIndex, 1)
+                    const listToEmit = await getUsersInRoom(roomId)
+                    io.to(roomId).emit('users', listToEmit);
+                    clearInterval(timer)
+                }
+            }, 1000, duration)
+
+
+    }
     socket.on('sending odds', async (username, zips, roomId, receiverSocketId, callback) => {
         const userToNotice = await getUserById(receiverSocketId)
         console.log("tok " + userToNotice.deviceToken)
@@ -168,18 +202,22 @@ io.on('connection', (socket) => {
         await addOdd(roomId, socket.id, username, zips, id, receiverSocketId, sender.username);
         const index = await findIndexOfUser(socket.id);
 
+        const timeoutId = await uid();
+
         const newTimeout = {
+            timeoutId: timeoutId,
             socketId: receiverSocketId,
-            time: null,
-            test: "jajajajaj"
+            timeLeft: 60,
         }
         users[index].timeOuts.push(newTimeout)
+        const timeoutIndex = await findIndexOfTimeout(index,timeoutId)
+
+        startTimer(timeoutIndex, index, receiverSocketId, roomId)
 
         const newOdd = await getOdd(id)
         callback({
-            oddsSent: newOdd.length
+            oddsSent: newOdd
         })
-
         const listToEmit = odds.filter((o) => o.roomId === roomId)
 
         io.to(receiverSocketId).emit('update list', listToEmit);
@@ -191,6 +229,10 @@ io.on('connection', (socket) => {
 
         const listToEmit = await getUsersInRoom(roomId)
         io.to(roomId).emit('users', listToEmit);
+
+        //socket.disconnect(); Det fuckar tydligen upp näör mman vill joina igen
+
+        io.emit('show all connected', users)
     })
 
     socket.on('check username', async (roomId, username, callback) => {

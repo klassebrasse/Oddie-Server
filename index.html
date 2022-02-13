@@ -5,14 +5,14 @@
         let socket = io();
         let el;
 
-        socket.on('time', (timeString) => {
-            el = document.getElementById('server-time');
-            el.innerHTML = 'Server time: ' + timeString;
+        socket.on('show all connected', (list) => {
+            el = document.getElementById('user-list');
+            el.innerHTML = list.length;
         });
     </script>
 </head>
 <body>
-<span>OLIVER MATTA LUKTAR ILLA</span>
-<p id="server-time"></p>
+<h3>Aktiva spelare</h3>
+<p id="user-list"></p>
 </body>
 </html>
