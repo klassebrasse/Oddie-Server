@@ -136,6 +136,12 @@ async function sendPushNotification(expoPushToken, text) {
     });
 }
 
+function addMinutes(minutes) {
+    const date = new Date()
+    return new Date(date.getTime() + 10000);
+    //return new Date(date.getTime() + minutes*60000);
+}
+
 
 io.on('connection', (socket) => {
     console.log('a user connected');
@@ -157,6 +163,8 @@ io.on('connection', (socket) => {
 
         io.to(roomId).emit('users', listToEmit);
         await sendPushNotification(listOfTokens, `${username} gick med i rummet`)
+
+        io.emit('show all connected', users)
     })
 
 
@@ -168,10 +176,10 @@ io.on('connection', (socket) => {
         await addOdd(roomId, socket.id, username, zips, id, receiverSocketId, sender.username);
         const index = await findIndexOfUser(socket.id);
 
+        const time = addMinutes(1)
         const newTimeout = {
             socketId: receiverSocketId,
-            time: null,
-            test: "jajajajaj"
+            time: time.getTime(),
         }
         users[index].timeOuts.push(newTimeout)
 
@@ -191,6 +199,10 @@ io.on('connection', (socket) => {
 
         const listToEmit = await getUsersInRoom(roomId)
         io.to(roomId).emit('users', listToEmit);
+
+        //socket.disconnect(); Det fuckar tydligen upp näör mman vill joina igen
+
+        io.emit('show all connected', users)
     })
 
     socket.on('check username', async (roomId, username, callback) => {
