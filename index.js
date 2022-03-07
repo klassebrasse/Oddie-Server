@@ -51,7 +51,7 @@ const uid = () => {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-const addOdd = async (roomId, sender, receiver, zips, id, receiverSocketId, senderUsername) => {
+const addOdd = async (roomId, sender, receiver, zips, id, receiverSocketId, senderUsername, date) => {
     let newOdd = {
         id: id,
         roomId: roomId,
@@ -65,6 +65,7 @@ const addOdd = async (roomId, sender, receiver, zips, id, receiverSocketId, send
         senderOdd: null,
         receiverGuess: null,
         senderGuess: null,
+        date: date,
     }
     odds.push(newOdd)
 }
@@ -88,7 +89,6 @@ const getPushTokensInRoomExceptCurrentUser = async (roomId, id) => {
 
     allUsersExceptCurrentUSer.forEach(u => listOfTokens.push(u.deviceToken))
 
-    console.log("LISTA AV TÖKKENS" + listOfTokens + " SLUT")
     return listOfTokens
 }
 
@@ -120,7 +120,7 @@ const findIndexOfTimeout = async (userIndex, timeoutId) => {
 //ExponentPushToken[b_QoKmLyYb6oZnert13ZLo]
 // ExponentPushToken[OGp7QDBzM9i0LTvO38gzrP]
 async function sendPushNotification(expoPushToken, text) {
-    console.log("Push notification, token: " + expoPushToken + ", message: " + text)
+    //console.log("Push notification, token: " + expoPushToken + ", message: " + text)
     const message = {
         to: expoPushToken,
         sound: 'default',
@@ -199,7 +199,8 @@ io.on('connection', (socket) => {
         console.log("tok " + userToNotice.deviceToken)
         const sender = await users.find(u => u.id === socket.id)
         const id = await uid();
-        await addOdd(roomId, socket.id, username, zips, id, receiverSocketId, sender.username);
+        const date = new Date();
+        await addOdd(roomId, socket.id, username, zips, id, receiverSocketId, sender.username, date);
         const index = await findIndexOfUser(socket.id);
 
         const timeoutId = await uid();
