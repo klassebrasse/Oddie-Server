@@ -11,13 +11,17 @@ const app = express()
 
 //const server = http.createServer(app);
 
-const PORT = process.env.PORT || 5500;
-const http = require('http').Server(app)
-const io = require('socket.io')(http)
+//const PORT = process.env.PORT || 3000;
+//const http = require('http').Server(app)
+//const io = require('socket.io')(http)
+
+let server = require('http').createServer((req, res) => res.end());
+let io = require('socket.io')(server);
+server.listen(process.env.PORT || 3000);
 
 app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'))
 
-http.listen(PORT, function (){
+server.listen(PORT, function (){
     console.log('Lyssnar på PORT: ' + PORT)
 })
 
