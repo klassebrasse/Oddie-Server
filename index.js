@@ -66,6 +66,8 @@ const addOdd = async (roomId, sender, receiver, zips, id, receiverSocketId, send
         receiverGuess: null,
         senderGuess: null,
         date: date,
+        senderHasSeen: false,
+        receiverHasSeen: false,
     }
     odds.push(newOdd)
 }
@@ -265,6 +267,27 @@ io.on('connection', (socket) => {
         const token = tempUser.deviceToken
 
         await sendPushNotification(token, `${odds[index].receiver} har gissat på din odds. Din tur att gissa`)
+    })
+
+    socket.on('odd done', async (oddId) => {
+        const index = odds.findIndex((obj => obj.id === oddId));
+        odds[index].status = 3;
+
+        const listToEmit = odds.filter((o) => o.roomId === odds[index].roomId)
+        io.to([socket.id, odds[index].sender]).emit('update list', listToEmit);
+
+        const tempUser = await getUserById(odds[index].sender)
+        const token = tempUser.deviceToken
+
+        await sendPushNotification(token, `${odds[index].receiver} har druckit`)
+    })
+
+    socket.on('rec seen', async (oddId) => {
+        const index = odds.findIndex((obj => obj.id === oddId));
+        odds[index].receiverHasSeen = true;
+
+        const listToEmit = odds.filter((o) => o.roomId === odds[index].roomId)
+        io.to([socket.id, odds[index].sender]).emit('update list', listToEmit);
     })
 
     socket.on('update user list', async (roomId, callback) => {
